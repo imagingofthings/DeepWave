@@ -13,20 +13,21 @@ Also add DAS image for comparison.
 import argparse
 import pathlib
 
-import acoustic_camera.nn as nn
-import acoustic_camera.spectral as spectral
-import acoustic_camera.tools.instrument as instrument
-import acoustic_camera.tools.io.image as image
-import acoustic_camera.tools.io.plot as plot
-import acoustic_camera.tools.math.linalg as pylinalg
-import acoustic_camera.tools.math.sphere as sphere
 import matplotlib.pyplot as plt
 import matplotlib.style
 import numpy as np
 import pkg_resources as pkg
 
-style_path = pathlib.Path('data', 'tools', 'io', 'plot', 'siml_style.mplstyle')
-style_path = pkg.resource_filename('acoustic_camera', str(style_path))
+import deepwave.nn as nn
+import deepwave.spectral as spectral
+import deepwave.tools.math.linalg as pylinalg
+import imot_tools.io.s2image as s2image
+import imot_tools.math.sphere.interpolate as interpolate
+import imot_tools.phased_array as phased_array
+
+
+style_path = pathlib.Path('data', 'io', 'imot_tools.mplstyle')
+style_path = pkg.resource_filename('imot_tools', str(style_path))
 matplotlib.style.use(style_path)
 
 
@@ -81,7 +82,7 @@ def process(args):
     I_das = spectral.DAS(D.XYZ, S, D.wl, D.R)
 
     # Rescale DAS to lie on same range as APGD
-    A = instrument.steering_operator(D.XYZ, D.R, D.wl)
+    A = phased_array.steering_operator(D.XYZ, D.R, D.wl)
     alpha = 1 / (2 * pylinalg.eighMax(A))
     beta = 2 * D.lambda_[args.img_idx] * alpha * (1 - D.gamma) + 1
     I_das *= (2 * alpha) / beta
@@ -89,7 +90,7 @@ def process(args):
     if args.interpolation_order is not None:
         N = args.interpolation_order
         approximate_kernel = True if (N > 15) else False
-        interp = sphere.Interpolator(N, approximate_kernel)
+        interp = interpolate.Interpolator(N, approximate_kernel)
         N_s = N_px = D.R.shape[1]
 
         I_prev = interp.__call__(weight=np.ones((N_s,)),
@@ -115,25 +116,22 @@ def process(args):
     ax_apgd = fig.add_subplot(132)
     ax_das = fig.add_subplot(133)
 
-    image.SphericalImage(I_prev, D.R).draw(catalog=D.ground_truth[args.img_idx],
-                                           projection=args.projection,
-                                           data_kwargs=dict(cmap=plot.magma_cmap(), ),
-                                           catalog_kwargs=dict(edgecolor='g', ),
-                                           ax=ax_prev)
+    s2image.Image(I_prev, D.R).draw(catalog=D.ground_truth[args.img_idx].xyz,
+                                    projection=args.projection,
+                                    catalog_kwargs=dict(edgecolor='g', ),
+                                    ax=ax_prev)
     ax_prev.set_title(r'$APGD_{init}$')
 
-    image.SphericalImage(I_apgd, D.R).draw(catalog=D.ground_truth[args.img_idx],
-                                           projection=args.projection,
-                                           data_kwargs=dict(cmap=plot.magma_cmap(), ),
-                                           catalog_kwargs=dict(edgecolor='g', ),
-                                           ax=ax_apgd)
+    s2image.Image(I_apgd, D.R).draw(catalog=D.ground_truth[args.img_idx].xyz,
+                                    projection=args.projection,
+                                    catalog_kwargs=dict(edgecolor='g', ),
+                                    ax=ax_apgd)
     ax_apgd.set_title('APGD')
 
-    image.SphericalImage(I_das, D.R).draw(catalog=D.ground_truth[args.img_idx],
-                                          projection=args.projection,
-                                          data_kwargs=dict(cmap=plot.magma_cmap(), ),
-                                          catalog_kwargs=dict(edgecolor='g', ),
-                                          ax=ax_das)
+    s2image.Image(I_das, D.R).draw(catalog=D.ground_truth[args.img_idx].xyz,
+                                   projection=args.projection,
+                                   catalog_kwargs=dict(edgecolor='g', ),
+                                   ax=ax_das)
     ax_das.set_title('DAS')
 
     fig.show()

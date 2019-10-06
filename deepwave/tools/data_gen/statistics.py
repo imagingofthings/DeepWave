@@ -8,11 +8,12 @@
 Visibility generation utilities.
 """
 
-import acoustic_camera.tools.instrument as inst
-import acoustic_camera.tools.math.stat as stat
 import numpy as np
 import scipy.signal.windows as windows
 import skimage.util as skutil
+
+import imot_tools.phased_array as phased_array
+import imot_tools.math.stat as stat
 
 
 class VisibilityGenerator:
@@ -49,7 +50,7 @@ class VisibilityGenerator:
             (3, N_antenna) Cartesian instrument geometry.
         wl : float
             Wave-length >= 0 [m].
-        sky_model : :py:class:`~tools.data.source.SkyModel`
+        sky_model : :py:class:`~deepwave.tools.data_gen.source.SkyModel`
             Source model.
 
         Returns
@@ -65,7 +66,7 @@ class VisibilityGenerator:
         s_xyz = sky_model.xyz
         s_I = sky_model.intensity
 
-        A = inst.steering_operator(XYZ, s_xyz, wl)
+        A = phased_array.steering_operator(XYZ, s_xyz, wl)
         S_sky = (A * s_I) @ A.conj().T
 
         noise_var = np.sum(s_I) / (2 * self._SNR)
@@ -106,7 +107,7 @@ class TimeSeriesGenerator:
             (3, N_antenna) Cartesian instrument geometry.
         wl : float
             Wave-length >= 0 [m].
-        sky_model : :py:class:`~tools.data.source.SkyModel`
+        sky_model : :py:class:`~deepwave.tools.data_gen.source.SkyModel`
             Source model.
         T : float
             Signal duration [s].
@@ -126,7 +127,7 @@ class TimeSeriesGenerator:
         s_I = sky_model.intensity
         N_src = s_I.shape[0]
 
-        A = inst.steering_operator(XYZ, s_xyz, wl)
+        A = phased_array.steering_operator(XYZ, s_xyz, wl)
         s_eps = (np.sqrt(s_I / 2).reshape(N_src, 1) *
                  (np.random.randn(N_src, N_sample) +
                   1j * np.random.randn(N_src, N_sample)))
@@ -225,7 +226,7 @@ class TimeSeries:
         N_stft_sample = int(self._rate * T)
         if N_stft_sample == 0:
             raise ValueError('Not enough samples per time frame.')
-        print(f'Samples per STFT: {N_stft_sample}')
+        # print(f'Samples per STFT: {N_stft_sample}')
 
         N_sample = (self._data.shape[0] // N_stft_sample) * N_stft_sample
         N_channel = self._data.shape[1]
@@ -240,8 +241,8 @@ class TimeSeries:
         # Find frequency channels to average together.
         idx_start = int((fc - 0.5 * bw) * N_stft_sample / self._rate)
         idx_end = int((fc + 0.5 * bw) * N_stft_sample / self._rate)
-        print(f'Spectrum start index: {idx_start}/{N_stft_sample}')
-        print(f'Spectrum end index: {idx_end}/{N_stft_sample}')
+        # print(f'Spectrum start index: {idx_start}/{N_stft_sample}')
+        # print(f'Spectrum end index: {idx_end}/{N_stft_sample}')
         collapsed_spectrum = np.sum(stft_data[:, idx_start:idx_end + 1, :], axis=1)
 
         # Don't understand yet why conj() on first term?

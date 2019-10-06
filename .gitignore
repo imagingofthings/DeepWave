@@ -47,3 +47,10 @@ doc/build/
 
 ### C/C++ template ============================================================
 *.so
+
+### Datasets
+datasets/FRIDA/FRIDA
+datasets/FRIDA/dataset
+datasets/Pyramic/pyramic-dataset
+datasets/Pyramic/dataset
+datasets/simulated/dataset

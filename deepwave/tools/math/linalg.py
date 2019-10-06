@@ -8,43 +8,11 @@
 Linear algebra routines.
 """
 
-import acoustic_camera.tools.instrument as instrument
 import numpy as np
 import scipy.linalg as linalg
 import scipy.sparse.linalg as splinalg
 
-
-def rot(axis, angle):
-    """
-    3D rotation matrix.
-
-    Parameters
-    ----------
-    axis : :py:class:`~numpy.ndarray`
-        (3,) rotation axis.
-    angle : float
-        Signed rotation angle [rad].
-
-    Returns
-    -------
-    R : :py:class:`~numpy.ndarray`
-        (3, 3) rotation matrix.
-    """
-    a, b, c = axis / linalg.norm(axis)
-    ct, st = np.cos(angle), np.sin(angle)
-
-    p00 = a ** 2 + (b ** 2 + c ** 2) * ct
-    p11 = b ** 2 + (a ** 2 + c ** 2) * ct
-    p22 = c ** 2 + (a ** 2 + b ** 2) * ct
-    p01 = a * b * (1 - ct) - c * st
-    p10 = a * b * (1 - ct) + c * st
-    p12 = b * c * (1 - ct) - a * st
-    p21 = b * c * (1 - ct) + a * st
-    p20 = a * c * (1 - ct) - b * st
-    p02 = a * c * (1 - ct) + b * st
-
-    R = np.array([[p00, p01, p02], [p10, p11, p12], [p20, p21, p22]])
-    return R
+import imot_tools.phased_array as phased_array
 
 
 def eighMax(A):
@@ -131,8 +99,8 @@ def psf_exp(XYZ, R, wl, center):
     if not (center.shape == (3,)):
         raise ValueError('Parameter[center] must be (3,) real-valued.')
 
-    A = instrument.steering_operator(XYZ, R, wl)
-    d = instrument.steering_operator(XYZ, center.reshape(3, 1), wl)
+    A = phased_array.steering_operator(XYZ, R, wl)
+    d = phased_array.steering_operator(XYZ, center.reshape(3, 1), wl)
 
     psf = np.reshape(d.T.conj() @ A, (N_px,))
     psf_mag2 = np.abs(psf) ** 2

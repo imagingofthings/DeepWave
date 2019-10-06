@@ -12,25 +12,25 @@ import argparse
 import pathlib
 import time
 
-import acoustic_camera.apgd as apgd
-import acoustic_camera.nn as nn
-import acoustic_camera.nn.crnn as crnn
-import acoustic_camera.spectral as spectral
-import acoustic_camera.tools.instrument as instrument
-import acoustic_camera.tools.io.image as image
-import acoustic_camera.tools.io.plot as plot
-import acoustic_camera.tools.math.func as func
-import acoustic_camera.tools.math.graph as graph
-import acoustic_camera.tools.math.linalg as pylinalg
-import acoustic_camera.tools.math.sphere as sphere
 import matplotlib.pyplot as plt
 import matplotlib.style
 import numpy as np
 import pkg_resources as pkg
 import scipy.linalg as linalg
 
-style_path = pathlib.Path('data', 'tools', 'io', 'plot', 'siml_style.mplstyle')
-style_path = pkg.resource_filename('acoustic_camera', str(style_path))
+import deepwave.apgd as apgd
+import deepwave.nn as nn
+import deepwave.nn.crnn as crnn
+import deepwave.spectral as spectral
+import deepwave.tools.math.func as func
+import deepwave.tools.math.graph as graph
+import deepwave.tools.math.linalg as pylinalg
+import imot_tools.io.s2image as s2image
+import imot_tools.math.sphere.interpolate as interpolate
+import imot_tools.phased_array as phased_array
+
+style_path = pathlib.Path('data', 'io', 'imot_tools.mplstyle')
+style_path = pkg.resource_filename('imot_tools', str(style_path))
 matplotlib.style.use(style_path)
 
 
@@ -113,7 +113,7 @@ def plot_parameters(info: dict):
         R_focus = np.mean(D.R, axis=1)
         R_focus /= linalg.norm(R_focus)
 
-        A = instrument.steering_operator(D.XYZ, D.R, D.wl)
+        A = phased_array.steering_operator(D.XYZ, D.R, D.wl)
         alpha = 1 / (2 * pylinalg.eighMax(A))
         beta = 2 * np.median(D.lambda_) * alpha * (1 - D.gamma) + 1
         psf = (pylinalg.psf_exp(D.XYZ, D.R, D.wl, center=R_focus) *
@@ -122,7 +122,7 @@ def plot_parameters(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             psf = interp.__call__(weight=np.ones((N_s,)),
                                   support=D.R,
@@ -130,10 +130,9 @@ def plot_parameters(info: dict):
                                   r=D.R)
             psf = np.clip(psf, a_min=0, a_max=None)
 
-        psf_plot = image.SphericalImage(data=psf, grid=D.R)
+        psf_plot = s2image.Image(data=psf, grid=D.R)
         psf_plot.draw(projection=info['projection'],
                       use_contours=False,
-                      data_kwargs=dict(cmap=plot.magma_cmap(), ),
                       catalog_kwargs=dict(edgecolor='g', ),
                       ax=ax)
         ax.set_title(r'$\Psi_{APGD}(r, r_{0})$')
@@ -143,7 +142,7 @@ def plot_parameters(info: dict):
         R_focus /= linalg.norm(R_focus)
         idx_focus = np.argmax(R_focus @ D.R)
 
-        A = instrument.steering_operator(D.XYZ, D.R, D.wl)
+        A = phased_array.steering_operator(D.XYZ, D.R, D.wl)
         N_px = D.R.shape[1]
         alpha = 1 / (2 * pylinalg.eighMax(A))
         beta = 2 * np.median(D.lambda_) * alpha * (1 - D.gamma) + 1
@@ -153,7 +152,7 @@ def plot_parameters(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             filter = interp.__call__(weight=np.ones((N_s,)),
                                      support=D.R,
@@ -161,10 +160,9 @@ def plot_parameters(info: dict):
                                      r=D.R)
             filter = np.clip(filter, a_min=0, a_max=None)
 
-        filter_plot = image.SphericalImage(data=filter, grid=D.R)
+        filter_plot = s2image.Image(data=filter, grid=D.R)
         filter_plot.draw(projection=info['projection'],
                          use_contours=False,
-                         data_kwargs=dict(cmap=plot.magma_cmap(), ),
                          catalog_kwargs=dict(edgecolor='g', ),
                          ax=ax)
         ax.set_title(r'$p_{\theta}^{APGD}\left(\widetilde{L}\right)$')
@@ -187,7 +185,7 @@ def plot_parameters(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             filter = interp.__call__(weight=np.ones((N_s,)),
                                      support=D.R,
@@ -195,10 +193,9 @@ def plot_parameters(info: dict):
                                      r=D.R)
             filter = np.clip(filter, a_min=0, a_max=None)
 
-        filter_plot = image.SphericalImage(data=filter, grid=D.R)
+        filter_plot = s2image.Image(data=filter, grid=D.R)
         filter_plot.draw(projection=info['projection'],
                          use_contours=False,
-                         data_kwargs=dict(cmap=plot.magma_cmap(), ),
                          catalog_kwargs=dict(edgecolor='g', ),
                          ax=ax)
         ax.set_title(r'$p_{\theta}^{RNN}\left(\widetilde{L}\right)$')
@@ -223,7 +220,7 @@ def plot_parameters(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             psf = interp.__call__(weight=np.ones((N_s,)),
                                   support=D.R,
@@ -231,10 +228,9 @@ def plot_parameters(info: dict):
                                   r=D.R)
             psf = np.clip(psf, a_min=0, a_max=None)
 
-        psf_plot = image.SphericalImage(data=psf, grid=D.R)
+        psf_plot = s2image.Image(data=psf, grid=D.R)
         psf_plot.draw(projection=info['projection'],
                       use_contours=False,
-                      data_kwargs=dict(cmap=plot.magma_cmap(), ),
                       catalog_kwargs=dict(edgecolor='g', ),
                       ax=ax)
         ax.set_title(r'$\Psi_{RNN}(r, r_{0})$')
@@ -251,17 +247,16 @@ def plot_parameters(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             tau_diff = interp.__call__(weight=np.ones((N_s,)),
                                        support=D.R,
                                        f=tau_diff.reshape((1, N_px)),
                                        r=D.R)
 
-        tau_plot = image.SphericalImage(data=tau_diff, grid=D.R)
+        tau_plot = s2image.Image(data=tau_diff, grid=D.R)
         tau_plot.draw(projection=info['projection'],
                       use_contours=False,
-                      data_kwargs=dict(cmap=plot.magma_cmap(), ),
                       catalog_kwargs=dict(edgecolor='g', ),
                       ax=ax)
         ax.set_title(r'$\frac{\tau_{APGD} - \tau_{RNN}}{\left\| \tau_{APGD} \right\|_{2}}$')
@@ -302,7 +297,7 @@ def plot_reconstruction(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             I_apgd = interp.__call__(weight=np.ones((N_s,)),
                                      support=D.R,
@@ -310,11 +305,10 @@ def plot_reconstruction(info: dict):
                                      r=D.R)
             I_apgd = np.clip(I_apgd, a_min=0, a_max=None)
 
-        apgd_plot = image.SphericalImage(data=I_apgd, grid=D.R)
-        apgd_plot.draw(catalog=sky_model,
+        apgd_plot = s2image.Image(data=I_apgd, grid=D.R)
+        apgd_plot.draw(catalog=sky_model.xyz,
                        projection=info['projection'],
                        use_contours=False,
-                       data_kwargs=dict(cmap=plot.magma_cmap(), ),
                        catalog_kwargs=dict(edgecolor='g', ),
                        ax=ax)
         ax.set_title(f'APGD {N_iter:02d} iter, {tts:.02f} [s]')
@@ -327,7 +321,7 @@ def plot_reconstruction(info: dict):
         sky_model = D.ground_truth[idx_img]
 
         N_layer = int(P['N_layer'])
-        A = instrument.steering_operator(D.XYZ, D.R, D.wl)
+        A = phased_array.steering_operator(D.XYZ, D.R, D.wl)
         lambda_ = D.lambda_[idx_img]
         I_trunc = apgd.solve(S, A, lambda_=lambda_, gamma=D.gamma, x0=I_prev.copy(), N_iter_max=N_layer)
         tts = I_trunc['time']
@@ -337,7 +331,7 @@ def plot_reconstruction(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             I_trunc = interp.__call__(weight=np.ones((N_s,)),
                                       support=D.R,
@@ -345,11 +339,10 @@ def plot_reconstruction(info: dict):
                                       r=D.R)
             I_trunc = np.clip(I_trunc, a_min=0, a_max=None)
 
-        trunc_plot = image.SphericalImage(data=I_trunc, grid=D.R)
-        trunc_plot.draw(catalog=sky_model,
+        trunc_plot = s2image.Image(data=I_trunc, grid=D.R)
+        trunc_plot.draw(catalog=sky_model.xyz,
                         projection=info['projection'],
                         use_contours=False,
-                        data_kwargs=dict(cmap=plot.magma_cmap(), ),
                         catalog_kwargs=dict(edgecolor='g', ),
                         ax=ax)
         ax.set_title(f'APGD {N_iter:02d} iter, {tts:.02f} [s]')
@@ -376,7 +369,7 @@ def plot_reconstruction(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             I_rnn = interp.__call__(weight=np.ones((N_s,)),
                                     support=D.R,
@@ -384,11 +377,10 @@ def plot_reconstruction(info: dict):
                                     r=D.R)
             I_rnn = np.clip(I_rnn, a_min=0, a_max=None)
 
-        rnn_plot = image.SphericalImage(data=I_rnn, grid=D.R)
-        rnn_plot.draw(catalog=sky_model,
+        rnn_plot = s2image.Image(data=I_rnn, grid=D.R)
+        rnn_plot.draw(catalog=sky_model.xyz,
                       projection=info['projection'],
                       use_contours=False,
-                      data_kwargs=dict(cmap=plot.magma_cmap(), ),
                       catalog_kwargs=dict(edgecolor='g', ),
                       ax=ax)
         ax.set_title(f'RNN {N_layer:02d} iter, {exec_time:.02f} [s]')
@@ -399,7 +391,7 @@ def plot_reconstruction(info: dict):
         S, _, _ = sampler.decode(D[idx_img])
         sky_model = D.ground_truth[idx_img]
 
-        A = instrument.steering_operator(D.XYZ, D.R, D.wl)
+        A = phased_array.steering_operator(D.XYZ, D.R, D.wl)
         alpha = 1 / (2 * pylinalg.eighMax(A))
         beta = 2 * D.lambda_[idx_img] * alpha * (1 - D.gamma) + 1
 
@@ -410,7 +402,7 @@ def plot_reconstruction(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             das = interp.__call__(weight=np.ones((N_s,)),
                                   support=D.R,
@@ -418,11 +410,10 @@ def plot_reconstruction(info: dict):
                                   r=D.R)
             das = np.clip(das, a_min=0, a_max=None)
 
-        das_plot = image.SphericalImage(data=das, grid=D.R)
-        das_plot.draw(catalog=sky_model,
+        das_plot = s2image.Image(data=das, grid=D.R)
+        das_plot.draw(catalog=sky_model.xyz,
                       projection=info['projection'],
                       use_contours=False,
-                      data_kwargs=dict(cmap=plot.magma_cmap(), ),
                       catalog_kwargs=dict(edgecolor='g', ),
                       ax=ax)
         ax.set_title(f'DAS, {exec_time:.02f} [s]')
@@ -448,7 +439,7 @@ def plot_reconstruction(info: dict):
         if info['interpolation_order'] is not None:
             N = info['interpolation_order']
             approximate_kernel = True if (N > 15) else False
-            interp = sphere.Interpolator(N, approximate_kernel)
+            interp = interpolate.Interpolator(N, approximate_kernel)
             N_s = N_px = D.R.shape[1]
             I_learned = interp.__call__(weight=np.ones((N_s,)),
                                         support=D.R,
@@ -456,11 +447,10 @@ def plot_reconstruction(info: dict):
                                         r=D.R)
             I_learned = np.clip(I_learned, a_min=0, a_max=None)
 
-        learned_plot = image.SphericalImage(data=I_learned, grid=D.R)
-        learned_plot.draw(catalog=sky_model,
+        learned_plot = s2image.Image(data=I_learned, grid=D.R)
+        learned_plot.draw(catalog=sky_model.xyz,
                           projection=info['projection'],
                           use_contours=False,
-                          data_kwargs=dict(cmap=plot.magma_cmap(), ),
                           catalog_kwargs=dict(edgecolor='g', ),
                           ax=ax)
         ax.set_title(r'diag$\left(D^{H} \hat{\Sigma} D\right)$')

@@ -8,10 +8,11 @@
 Source model.
 """
 
-import acoustic_camera.tools.math.linalg as pylinalg
-import acoustic_camera.tools.math.sphere as sph
 import numpy as np
 import scipy.linalg as linalg
+
+import imot_tools.math.linalg as pylinalg
+import imot_tools.math.sphere.transform as transform
 
 
 class SkyModel:
@@ -77,7 +78,7 @@ class SkyModel:
 
         Returns
         -------
-        sky : :py:class:`~acoustic_camera.tools.data_gen.source.SkyModel`
+        sky : :py:class:`~deepwave.tools.data_gen.source.SkyModel`
         """
         Q = int(enc[0])
         N_data = len(enc)
@@ -107,7 +108,7 @@ def from_circular_distribution(direction, FoV, N_src):
 
     Returns
     -------
-    sky_model : :py:class:`~tools.data_gen.source.SkyModel`
+    sky_model : :py:class:`~deepwave.tools.data_gen.source.SkyModel`
         Sky model.
     """
     if not (0 < FoV < 2 * np.pi):
@@ -115,10 +116,10 @@ def from_circular_distribution(direction, FoV, N_src):
 
     colat = FoV / 4
     lon = np.linspace(0, 2 * np.pi, N_src, endpoint=False)
-    XYZ = np.stack(sph.pol2cart(1, colat, lon), axis=0)
+    XYZ = np.stack(transform.pol2cart(1, colat, lon), axis=0)
 
     # Center grid at 'direction'
-    _, dir_colat, _ = sph.cart2pol(*direction)
+    _, dir_colat, _ = transform.cart2pol(*direction)
     R_axis = np.cross([0, 0, 1], direction)
     if np.allclose(R_axis, 0):
         # R_axis is in span(E_z), so we must manually set R

@@ -8,9 +8,10 @@
 Spectral algorithms to estimate intensity field.
 """
 
-import acoustic_camera.tools.instrument as inst
 import numpy as np
 import scipy.linalg as linalg
+
+import imot_tools.phased_array as phased_array
 
 
 def DAS(XYZ, S, wl, R, A_H=None):
@@ -54,6 +55,6 @@ def DAS(XYZ, S, wl, R, A_H=None):
     D, V = D[idx], V[:, idx]
 
     if A_H is None:
-        A_H = inst.steering_operator(XYZ, R, wl).conj().T
+        A_H = phased_array.steering_operator(XYZ, R, wl).conj().T
     SP = linalg.norm(A_H @ (V * np.sqrt(D)), axis=1) ** 2
     return SP

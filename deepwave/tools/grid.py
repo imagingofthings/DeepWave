@@ -8,57 +8,7 @@
 Pixel-grid generation for spherical surfaces.
 """
 
-import acoustic_camera.tools.math.sphere as sph
 import numpy as np
-
-
-def fibonacci_grid(order, direction=None, FoV=None):
-    """
-    Fibonacci pixel grid.
-
-    Parameters
-    ----------
-    order : int
-        Max SH order of representable plane waves.
-    direction : :py:class:`~numpy.ndarray`
-        (3,) vector around which the grid is centered.
-    FoV : float
-        Span of the grid centered at `direction` [rad].
-
-    Returns
-    -------
-    :py:class:`~numpy.ndarray`
-        if `direction == FoV == None`:
-            (3, 4*(L+1)**2) pixel grid.
-        else:
-            (3, N_px) pixel grid limited to desired FoV.
-
-    """
-    if (FoV is None) and (direction is None):
-        pass
-    elif (FoV is not None) and (direction is not None):
-        pass
-    else:
-        raise ValueError('Parameters[direction, FoV] must be simultaneously None or non-None.')
-
-    if (FoV is not None) and (not (0 < FoV < 2 * np.pi)):
-        raise ValueError('Parameter[FoV] must lie in (0, 360) degrees.')
-    if order < 0:
-        raise ValueError('Parameter[order] must be non-negative.')
-
-    N_px = 4 * (order + 1) ** 2
-
-    n = np.arange(N_px)
-    colat = np.arccos(1 - (2 * n + 1) / N_px)
-    lon = (4 * np.pi * n) / (1 + np.sqrt(5))
-    XYZ = np.stack(sph.pol2cart(1, colat, lon), axis=0)
-
-    # Filtering to FoV
-    if (direction is not None) and (FoV is not None):
-        min_similarity = np.cos(FoV / 2)
-        mask = (direction @ XYZ) >= min_similarity
-        XYZ = XYZ[:, mask]
-    return XYZ
 
 
 def thin_grid(R, min_dist):

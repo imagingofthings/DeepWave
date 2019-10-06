@@ -8,14 +8,15 @@
 RNN architecture based on graph convolutions.
 """
 
-import acoustic_camera.nn as nn
-import acoustic_camera.tools.instrument as instrument
-import acoustic_camera.tools.math.func as func
-import acoustic_camera.tools.math.graph as graph
-import acoustic_camera.tools.math.optim as optim
 import numpy as np
 import scipy.linalg as linalg
 import scipy.sparse as sp
+
+import deepwave.nn as nn
+import deepwave.tools.math.func as func
+import deepwave.tools.math.graph as graph
+import deepwave.tools.math.optim as optim
+import imot_tools.phased_array as phased_array
 
 
 class Parameter(optim.Parameter):
@@ -103,7 +104,7 @@ class Parameter(optim.Parameter):
         ----------
         enc : :py:class:`~numpy.ndarray`
             ([N_sample], N_cell,) vectorized encoding, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
         keepdims : bool
             If `True` and `enc.ndim == 1', then the `1`-sized leading dimension
             of the outputs is dropped.
@@ -166,9 +167,9 @@ class SampleLossFunction(optim.ScalarFunction):
         ----------
         N_layer : int
             Number of iterations `L` in RNN.
-        p : :py:class:`~acoustic_camera.nn.crnn.Parameter`
+        p : :py:class:`~deepwave.nn.crnn.Parameter`
             Serializer to encode/decode parameters.
-        s : :py:class:`~acoustic_camera.nn.Sampler`
+        s : :py:class:`~deepwave.nn.Sampler`
             Serializer to encode/decode samples.
         Ln : :py:class:`~scipy.sparse.csr_matrix`
             (N_px, N_px) normalized graph Laplacian.
@@ -190,11 +191,11 @@ class SampleLossFunction(optim.ScalarFunction):
         self._N_layer = N_layer
 
         if not isinstance(p, Parameter):
-            raise ValueError('Parameter[p]: expected acoustic_camera.nn.crnn.Parameter')
+            raise ValueError('Parameter[p]: expected deepwave.nn.crnn.Parameter')
         self._p = p
 
         if not isinstance(s, nn.Sampler):
-            raise ValueError('Parameter[s]: expected acoustic_camera.nn.Sampler')
+            raise ValueError('Parameter[s]: expected deepwave.nn.Sampler')
         self._s = s
 
         N_px = self._s._N_px
@@ -244,10 +245,10 @@ class SampleLossFunction(optim.ScalarFunction):
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
         x : :py:class:`~numpy.ndarray`
             ([N_sample,], N_cell_2) vectorized sample encoding, output of
-            :py:meth:`~acoustic_camera.nn.Sampler.encode`.
+            :py:meth:`~deepwave.nn.Sampler.encode`.
 
             Several samples can be provided if stacked along axis 0.
 
@@ -297,10 +298,10 @@ class SampleLossFunction(optim.ScalarFunction):
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
         x : :py:class:`~numpy.ndarray`
             ([N_sample,], N_cell_2) vectorized sample encoding, output of
-            :py:meth:`~acoustic_camera.nn.Sampler.encode`.
+            :py:meth:`~deepwave.nn.Sampler.encode`.
 
             Several samples can be provided if stacked along axis 0.
 
@@ -308,7 +309,7 @@ class SampleLossFunction(optim.ScalarFunction):
         -------
         z : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter gradient, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
 
             z = \frac{1}{N_sample} \sum_{i=1}^{N_sample} \grad_{p}{f(p, x[i])}
         """
@@ -375,13 +376,13 @@ class D_RidgeLossFunction(optim.ScalarFunction):
         ----------
         lambda_ : float
             Regularization parameter \ge 0
-        p : :py:class:`~acoustic_camera.nn.crnn.Parameter`
+        p : :py:class:`~deepwave.nn.crnn.Parameter`
             Serializer to encode/decode parameters.
         """
         super().__init__()
 
         if not isinstance(p, Parameter):
-            raise ValueError('Parameter[p]: expected acoustic_camera.nn.crnn.Parameter.')
+            raise ValueError('Parameter[p]: expected deepwave.nn.crnn.Parameter.')
         self._p = p
 
         if not (lambda_ >= 0):
@@ -396,10 +397,10 @@ class D_RidgeLossFunction(optim.ScalarFunction):
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
         x : :py:class:`~numpy.ndarray`
             ([N_sample,], N_cell_2) vectorized sample encoding, output of
-            :py:meth:`~acoustic_camera.nn.Sampler.encode`.
+            :py:meth:`~deepwave.nn.Sampler.encode`.
 
             Several samples can be provided if stacked along axis 0.
 
@@ -426,10 +427,10 @@ class D_RidgeLossFunction(optim.ScalarFunction):
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
         x : :py:class:`~numpy.ndarray`
             ([N_sample,], N_cell_2) vectorized sample encoding, output of
-            :py:meth:`~acoustic_camera.nn.Sampler.encode`.
+            :py:meth:`~deepwave.nn.Sampler.encode`.
 
             Several samples can be provided if stacked along axis 0.
 
@@ -440,7 +441,7 @@ class D_RidgeLossFunction(optim.ScalarFunction):
         -------
         z : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter gradient, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
 
             z = \grad_{p}{f(p)}
         """
@@ -468,7 +469,7 @@ class LaplacianLossFunction(optim.ScalarFunction):
             (N_px, N_px) Graph Laplacian.
         lambda_ : float
             Regularization parameter >= 0.
-        p : :py:class:`~acoustic_camera.nn.crnn.Parameter`
+        p : :py:class:`~deepwave.nn.crnn.Parameter`
             Serializer to encode/decode parameters.
         """
         super().__init__()
@@ -482,7 +483,7 @@ class LaplacianLossFunction(optim.ScalarFunction):
         self._B = B
 
         if not isinstance(p, Parameter):
-            raise ValueError('Parameter[p]: expected acoustic_camera.nn.crnn.Parameter')
+            raise ValueError('Parameter[p]: expected deepwave.nn.crnn.Parameter')
         self._p = p
 
     def eval(self, p, x):
@@ -493,10 +494,10 @@ class LaplacianLossFunction(optim.ScalarFunction):
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
         x : :py:class:`~numpy.ndarray`
             ([N_sample,], N_cell_2) vectorized sample encoding, output of
-            :py:meth:`~acoustic_camera.nn.Sampler.encode`.
+            :py:meth:`~deepwave.nn.Sampler.encode`.
 
             Several samples can be provided if stacked along axis 0.
 
@@ -523,10 +524,10 @@ class LaplacianLossFunction(optim.ScalarFunction):
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
         x : :py:class:`~numpy.ndarray`
             ([N_sample,], N_cell_2) vectorized sample encoding, output of
-            :py:meth:`~acoustic_camera.nn.Sampler.encode`.
+            :py:meth:`~deepwave.nn.Sampler.encode`.
 
             Several samples can be provided if stacked along axis 0.
 
@@ -537,7 +538,7 @@ class LaplacianLossFunction(optim.ScalarFunction):
         -------
         z : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter gradient, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
 
             z = \grad_{p}{f(p)}
         """
@@ -571,13 +572,13 @@ def APGD_Parameter(XYZ, R, wl, lambda_, gamma, L, eps):
         Lipschitz constant from Remark 3.3
     eps : float
         PSF truncation coefficient for
-        :py:method:`~acoustic_camera.tools.math.graph.ConvolutionalFilter.estimate_order`
+        :py:method:`~deepwave.tools.math.graph.ConvolutionalFilter.estimate_order`
 
     Returns
     -------
     p : :py:class:`~numpy.ndarray`
         (N_cell,) vectorized parameter value, output of
-        :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+        :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
     K : int
         Order of polynomial filter.
     """
@@ -587,7 +588,7 @@ def APGD_Parameter(XYZ, R, wl, lambda_, gamma, L, eps):
         v[i] = 1
         return v
 
-    A = instrument.steering_operator(XYZ, R, wl)
+    A = phased_array.steering_operator(XYZ, R, wl)
     N_antenna, N_px = A.shape
     alpha = 1 / L
     beta = 2 * lambda_ * alpha * (1 - gamma) + 1
@@ -626,11 +627,11 @@ class Evaluator:
         ----------
         N_layer : int
             Number of iterations `L` in RNN.
-        p : :py:class:`~acoustic_camera.nn.crnn.Parameter`
+        p : :py:class:`~deepwave.nn.crnn.Parameter`
             Serializer to encode/decode parameters.
         p_opt : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of
-            :py:meth:`~acoustic_camera.nn.crnn.Parameter.encode`.
+            :py:meth:`~deepwave.nn.crnn.Parameter.encode`.
         Ln : :py:class:`~scipy.sparse.csr_matrix`
             (N_px, N_px) normalized graph Laplacian.
         afunc : function
@@ -641,7 +642,7 @@ class Evaluator:
         self._N_layer = N_layer
 
         if not isinstance(p, Parameter):
-            raise ValueError('Parameter[p]: expected acoustic_camera.nn.crnn.Parameter')
+            raise ValueError('Parameter[p]: expected deepwave.nn.crnn.Parameter')
 
         self._afunc = afunc
 

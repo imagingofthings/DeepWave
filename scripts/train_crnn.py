@@ -13,14 +13,16 @@ import logging
 import pathlib
 import sys
 
-import acoustic_camera.nn as nn
-import acoustic_camera.nn.crnn as crnn
-import acoustic_camera.tools.instrument as instrument
-import acoustic_camera.tools.math.func as func
-import acoustic_camera.tools.math.graph as graph
-import acoustic_camera.tools.math.linalg as pylinalg
-import acoustic_camera.tools.math.optim as optim
 import numpy as np
+
+import deepwave.nn as nn
+import deepwave.nn.crnn as crnn
+import deepwave.tools.math.func as func
+import deepwave.tools.math.graph as graph
+import deepwave.tools.math.linalg as pylinalg
+import deepwave.tools.math.optim as optim
+import imot_tools.util.argcheck as argcheck
+import imot_tools.phased_array as phased_array
 
 
 def parse_args():
@@ -81,10 +83,14 @@ def parse_args():
                         type=str,
                         choices=['relative-l2', 'shifted-kl'])
 
-    parser.add_argument('--tv_ratio',
-                        help='training set/validation set split ratio. (0, 1)',
-                        required=True,
-                        type=float)
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--tv_ratio',
+                       help='training set/validation set split ratio. (0, 1)',
+                       type=float)
+    group.add_argument('--tv_index',
+                       help=('.npz file with explicit train set/validation set indices. '
+                             'Keys must be named idx_train & idx_test'),
+                       type=str)
 
     parser.add_argument('--lr',
                         help='SGD step size',
@@ -126,6 +132,8 @@ def parse_args():
     args = parser.parse_args()
     args.dataset = pathlib.Path(args.dataset).expanduser().absolute()
     args.parameter = pathlib.Path(args.parameter).expanduser().absolute()
+    if args.tv_index is not None:
+        args.tv_index = pathlib.Path(args.tv_index).expanduser().absolute()
 
     # Overwrite user's choice of D_lambda, tau_lambda depending of --fix_[D, tau] choices.
     if args.fix_D:
@@ -177,7 +185,7 @@ def train_network(args):
         np.random.seed(args.seed)
 
     D = nn.DataSet.from_file(str(args.dataset))
-    A = instrument.steering_operator(D.XYZ, D.R, D.wl)
+    A = phased_array.steering_operator(D.XYZ, D.R, D.wl)
     N_antenna, N_px = A.shape
     sampler = nn.Sampler(N_antenna, N_px)
 
@@ -237,11 +245,29 @@ def train_network(args):
     ### Dataset Preprocessing: drop all-0 samples + permutation
     _, I, _ = sampler.decode(D[:])
     sample_mask = ~np.isclose(I.sum(axis=1), 0)
-    idx_valid = np.flatnonzero(sample_mask)
-    idx_sample = np.random.permutation(idx_valid)
-    N_sample = len(idx_valid)
-    idx_ts = idx_sample[int(N_sample * args.tv_ratio):]
-    idx_vs = idx_sample[:int(N_sample * args.tv_ratio)]
+    if args.tv_index is None:  # Random split
+        idx_valid = np.flatnonzero(sample_mask)
+        idx_sample = np.random.permutation(idx_valid)
+
+        N_sample = len(idx_valid)
+        idx_ts = idx_sample[int(N_sample * args.tv_ratio):]
+        idx_vs = idx_sample[:int(N_sample * args.tv_ratio)]
+    else:  # Deterministic split
+        idx_tv = np.load(args.tv_index)
+        if not (('idx_train' in idx_tv) and ('idx_test' in idx_tv)):
+            raise ValueError('Parameter[tv_index] does not have keys "idx_train" and "idx_test".')
+        idx_ts = idx_tv['idx_train']
+        if not (argcheck.has_integers(idx_ts) and
+                np.all((0 <= idx_ts) & (idx_ts < len(D)))):
+            raise ValueError('Specified "idx_ts" values must be integer and in {0, ..., len(D) - 1}.')
+        idx_vs = idx_tv['idx_test']
+        if not (argcheck.has_integers(idx_vs) and
+                np.all((0 <= idx_vs) & (idx_vs < len(D)))):
+            raise ValueError('Specified "idx_vs" values must be integer and in {0, ..., len(D) - 1}.')
+
+        idx_invalid = np.flatnonzero(~sample_mask)
+        idx_ts = np.setdiff1d(idx_ts, idx_invalid)
+        idx_vs = np.setdiff1d(idx_vs, idx_invalid)
 
     D_ts = nn.DataSet(D[idx_ts], D.XYZ, D.R, D.wl,
                       ground_truth=[D.ground_truth[idx] for idx in idx_ts],

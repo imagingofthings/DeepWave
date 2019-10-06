@@ -58,7 +58,7 @@ class DataSet:
             Follows the same indexing conventions as NumPy arrays.
 
             You will need an instance of
-            :py:class:`~acoustic_camera.tools.math.optim.Sampler` to manipulate the sample.
+            :py:class:`~deepwave.tools.math.optim.Sampler` to manipulate the sample.
         """
         data = self._data[key]
         return data
@@ -83,11 +83,11 @@ class DataSet:
         ----------
         enc : :py:class:`~numpy.ndarray`
             (N_cell,) vectorized encoding, output of
-            (:py:meth:`~acoustic_camera.tools.math.optim.Dataset.encode`.
+            (:py:meth:`~deepwave.tools.math.optim.Dataset.encode`.
 
         Returns
         -------
-        D : :py:class:`~acoustic_camera.tools.math.optim.Dataset`
+        D : :py:class:`~deepwave.tools.math.optim.Dataset`
         """
         raise NotImplementedError
 
@@ -115,7 +115,7 @@ class DataSet:
 
         Returns
         -------
-        D : :py:class:`~acoustic_camera.tools.math.optim.DataSet`
+        D : :py:class:`~deepwave.tools.math.optim.DataSet`
         """
         file_path = pathlib.Path(file_name).expanduser().absolute()
         data = np.load(str(file_path))['data']
@@ -159,7 +159,7 @@ class Sampler:
         ----------
         enc : :py:class:`~numpy.ndarray`
             ([N_sample], N_cell) vectorized encoding, output of
-            (:py:meth:`~acoustic_camera.tools.math.optim.Sampler.encode`.
+            (:py:meth:`~deepwave.tools.math.optim.Sampler.encode`.
 
         Returns
         -------
@@ -208,7 +208,7 @@ class Parameter:
         ----------
         enc : :py:class:`~numpy.ndarray`
             ([N_sample], N_cell) vectorized encoding, output of
-            (:py:meth:`~acoustic_camera.tools.math.optim.Parameter.encode`.
+            (:py:meth:`~deepwave.tools.math.optim.Parameter.encode`.
 
         Returns
         -------
@@ -237,10 +237,10 @@ class ScalarFunction:
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of some
-            :py:meth:`~acoustic_camera.tools.math.optim.Parameter.encode`.
+            :py:meth:`~deepwave.tools.math.optim.Parameter.encode`.
         x : :py:class:`~numpy.ndarray`
             ([N_sample,], N_cell_2) vectorized sample encoding, output of some
-            :py:meth:`~acoustic_camera.tools.math.optim.Sampler.encode`.
+            :py:meth:`~deepwave.tools.math.optim.Sampler.encode`.
 
             Several samples can be provided if stacked along axis 0.
 
@@ -259,10 +259,10 @@ class ScalarFunction:
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter encoding, output of some
-            :py:meth:`~acoustic_camera.tools.math.optim.Parameter.encode`.
+            :py:meth:`~deepwave.tools.math.optim.Parameter.encode`.
         x : :py:class:`~numpy.ndarray`
             ([N_sample,], N_cell_2) vectorized sample encoding, output of some
-            :py:meth:`~acoustic_camera.tools.math.optim.Sampler.encode`.
+            :py:meth:`~deepwave.tools.math.optim.Sampler.encode`.
 
             Several samples can be provided if stacked along axis 0.
 
@@ -270,7 +270,7 @@ class ScalarFunction:
         -------
         z : :py:class:`~numpy.ndarray`
             (N_cell_1,) vectorized parameter gradient, output of some
-            :py:meth:`~acoustic_camera.tools.math.optim.Parameter.encode`.
+            :py:meth:`~deepwave.tools.math.optim.Parameter.encode`.
 
             z = \frac{1}{N_sample} \sum_{i=1}^{N_sample} \grad_{p}{f(p, x[i])}
         """
@@ -290,7 +290,7 @@ class StochasticGradientDescent:
         """
         Parameters
         ----------
-        func : list(:py:class:`~acoustic_camera.tools.math.optim.ScalarFunction`)
+        func : list(:py:class:`~deepwave.tools.math.optim.ScalarFunction`)
             One or more convex objective functions.
         batch_size : int
             Number of samples to process per batch.
@@ -352,7 +352,7 @@ class StochasticGradientDescent:
         ----------
         p : :py:class:`~numpy.ndarray`
             (N_cell,) parameter
-        D : :py:class:`~acoustic_camera.tools.math.optim.DataSet`
+        D : :py:class:`~deepwave.tools.math.optim.DataSet`
 
         Returns
         -------
@@ -380,9 +380,9 @@ class StochasticGradientDescent:
 
         Parameters
         ----------
-        ts : :py:class:`~acoustic_camera.tools.math.optim.DataSet`
+        ts : :py:class:`~deepwave.tools.math.optim.DataSet`
             Training set.
-        vs : :py:class:`~acoustic_camera.tools.math.optim.DataSet`
+        vs : :py:class:`~deepwave.tools.math.optim.DataSet`
             Validation set.
         p0 : :py:class:`~numpy.ndarray`
             Initial point for optimization.

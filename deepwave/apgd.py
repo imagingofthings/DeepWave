@@ -10,10 +10,11 @@ Accelerated Proximal Gradient Descent (APGD) Solver.
 
 import time
 
-import acoustic_camera.tools.math.linalg as pylinalg
 import numpy as np
 import pyunlocbox as opt
 from pyunlocbox.functions import dummy
+
+import deepwave.tools.math.linalg as pylinalg
 
 
 class l2_loss(opt.functions.func):
@@ -518,7 +519,7 @@ def solve(S, A, lambda_=None, gamma=0.5, L=None, d=50, x0=None, eps=1e-3,
         optimized.
 
         If `None`, then it is estimated using
-        :py:func:`~acoustic_camera.tools.math.linalg.eighMax`.
+        :py:func:`~deepwave.tools.math.linalg.eighMax`.
     d : float
         Weight parameter as defined in [1].
     x0 : :py:class:`~numpy.ndarray`

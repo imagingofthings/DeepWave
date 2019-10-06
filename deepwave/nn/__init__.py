@@ -8,9 +8,10 @@
 Neural Network Tools.
 """
 
-import acoustic_camera.tools.data_gen.source as source
-import acoustic_camera.tools.math.optim as optim
 import numpy as np
+
+import deepwave.tools.data_gen.source as source
+import deepwave.tools.math.optim as optim
 
 
 class DataSet(optim.DataSet):
@@ -30,7 +31,7 @@ class DataSet(optim.DataSet):
             (3, N_px) Cartesian grid points.
         wl : float
             Wavelength >= 0 [m].
-        ground_truth : list(:py:class:`~acoustic_camera.tools.data_gen.source.SkyModel`)
+        ground_truth : list(:py:class:`~deepwave.tools.data_gen.source.SkyModel`)
             (N_sample,) ground truth sky models. (Restricted to the region of interest.)
         lambda_ : :py:class:`~numpy.ndarray`
             (N_sample,) APGD regularization parameters.
@@ -113,7 +114,7 @@ class DataSet(optim.DataSet):
         """
         Returns
         -------
-        model : list(:py:class:`~acoustic_camera.tools.data_gen.source.SkyModel`)
+        model : list(:py:class:`~deepwave.tools.data_gen.source.SkyModel`)
             (N_sample,) ground truth sky models.
         """
         model = self._ground_truth
@@ -167,9 +168,9 @@ class DataSet(optim.DataSet):
         """
         Returns
         -------
-        s : :py:class:`~acoustic_camera.nn.Sampler`
+        s : :py:class:`~deepwave.nn.Sampler`
             Serializer used to read the encoded samples provided by
-            :py:meth:`~acoustic_camera.nn.DataSet.__getitem__`.
+            :py:meth:`~deepwave.nn.DataSet.__getitem__`.
         """
         N_antenna = self._XYZ.shape[1]
         N_px = self._R.shape[1]
@@ -302,7 +303,7 @@ class DataSet(optim.DataSet):
         ----------
         enc : :py:class:`~numpy.ndarray`
             (N_cell,) vectorized encoding, output of
-            :py:meth:`~acoustic_camera.nn.DataSet._encode_data`.
+            :py:meth:`~deepwave.nn.DataSet._encode_data`.
 
         Returns
         -------
@@ -365,11 +366,11 @@ class DataSet(optim.DataSet):
         ----------
         enc : :py:class:`~numpy.ndarray`
             (N_cell,) vectorized encoding, output of
-            :py:meth:`~acoustic_camera.nn.DataSet._encode_sky`.
+            :py:meth:`~deepwave.nn.DataSet._encode_sky`.
 
         Returns
         -------
-        ground_truth : list(:py:class:`~acoustic_camera.tools.data_gen.source.SkyModel`)
+        ground_truth : list(:py:class:`~deepwave.tools.data_gen.source.SkyModel`)
             (N_sample,) ground truth sky models.
         """
         N_sample = int(enc[0])
@@ -399,11 +400,11 @@ class DataSet(optim.DataSet):
         ----------
         enc : :py:class:`~numpy.ndarray`
             (N_cell,) vectorized encoding, output of
-            :py:meth:`~acoustic_camera.nn.DataSet.encode`.
+            :py:meth:`~deepwave.nn.DataSet.encode`.
 
         Returns
         -------
-        D : :py:class:`~acoustic_camera.nn.DataSet`
+        D : :py:class:`~deepwave.nn.DataSet`
         """
         N_cell_data = int(enc[0])
         N_cell_sky = int(enc[1])
@@ -423,7 +424,7 @@ class DataSet(optim.DataSet):
 
 class Sampler(optim.Sampler):
     """
-    Serializer to encode/decode samples of :py:class:`~acoustic_camera.nn.DataSet`.
+    Serializer to encode/decode samples of :py:class:`~deepwave.nn.DataSet`.
     """
 
     def __init__(self, N_antenna, N_px):
@@ -504,7 +505,7 @@ class Sampler(optim.Sampler):
         ----------
         enc : :py:class:`~numpy.ndarray`
             ([N_sample], N_cell) vectorized encoding, output of
-            :py:meth:`~acoustic_camera.nn.Sampler.encode`.
+            :py:meth:`~deepwave.nn.Sampler.encode`.
         keepdims : bool
             If `True` and `enc.ndim == 1', then the `1`-sized leading dimension
             of the outputs is dropped.

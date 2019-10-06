@@ -243,7 +243,7 @@ class ConvolutionalFilter:
         rho : float
             Scale parameter \rho corresponding to the average distance of a point
             on the graph to its nearest neighbor.
-            Output of :py:func:`~acoustic_camera.tools.math.graph.laplacian_exp`.
+            Output of :py:func:`~deepwave.tools.math.graph.laplacian_exp`.
         wl : float
             Wavelength of observations [m].
         eps : float

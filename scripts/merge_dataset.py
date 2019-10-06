@@ -11,8 +11,9 @@ Combine multiple datasets to form large dataset.
 import argparse
 import pathlib
 
-import acoustic_camera.nn as nn
 import numpy as np
+
+import deepwave.nn as nn
 
 
 def parse_args():
@@ -39,11 +40,7 @@ def parse_args():
     return args
 
 
-if __name__ == '__main__':
-    args = parse_args()
-
-    D = [nn.DataSet.from_file(str(_)) for _ in args.dataset]
-
+def merge_dataset(D, f_out):
     XYZ, R, wl, gamma = D[0].XYZ, D[0].R, D[0].wl, D[0].gamma
     if not all([np.allclose(XYZ, d.XYZ) for d in D]):
         raise ValueError('Cannot merge datasets over different configurations.')
@@ -62,4 +59,11 @@ if __name__ == '__main__':
 
     D_merge = nn.DataSet(data_merge, XYZ, R, wl, gt_merge,
                          lambda_merge, gamma, N_iter_merge, tts_merge)
-    D_merge.to_file(str(args.out))
+    D_merge.to_file(str(f_out))
+    return D_merge
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    D = [nn.DataSet.from_file(str(_)) for _ in args.dataset]
+    D_merged = merge_dataset(D, args.out)

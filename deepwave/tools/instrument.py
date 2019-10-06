@@ -8,10 +8,10 @@
 Array Geometries.
 """
 
-import acoustic_camera.tools.math.special as special
-import acoustic_camera.tools.math.sphere as sph
 import numpy as np
 import scipy.linalg as linalg
+
+import imot_tools.math.sphere.transform as transform
 
 
 def pyramic_geometry():
@@ -69,52 +69,5 @@ def spherical_geometry():
     lon = (4 * np.pi * n) / (1 + np.sqrt(5))
     r = 0.2
 
-    XYZ = np.stack(sph.pol2cart(r, colat, lon), axis=0)
+    XYZ = np.stack(transform.pol2cart(r, colat, lon), axis=0)
     return XYZ
-
-
-def steering_operator(XYZ, R, wl):
-    """
-    Parameters
-    ----------
-    XYZ : :py:class:`~numpy.ndarray`
-        (3, N_antenna) Cartesian array geometry.
-    R : :py:class:`~numpy.ndarray`
-        (3, N_px) Cartesian grid points.
-    wl : float
-        Wavelength >= 0 [m].
-
-    Returns
-    -------
-    A : :py:class:`~numpy.ndarray`
-        (N_antenna, N_px) steering matrix.
-    """
-    if wl <= 0:
-        raise ValueError("Parameter[wl] must be positive.")
-
-    scale = 2 * np.pi / wl
-    A = np.exp((-1j * scale * XYZ.T) @ R)
-    return A
-
-
-def nyquist_rate(XYZ, wl):
-    """
-    Order of imageable complex plane-waves.
-
-    Parameters
-    ----------
-    XYZ : :py:class:`~numpy.ndarray`
-        (3, N_antenna) Cartesian array geometry.
-    wl : float
-        Wavelength [m] of observations.
-
-    Returns
-    -------
-    N : int
-        Maximum order of complex plane waves that can be imaged by the instrument.
-    """
-    baseline = linalg.norm(XYZ[:, np.newaxis, :] -
-                           XYZ[:, :, np.newaxis], axis=0)
-
-    N = special.spherical_jn_series_threshold((2 * np.pi / wl) * baseline.max())
-    return N
